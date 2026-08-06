@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider paths for the kuri_app updater.
+
+  <cache-path> maps to Context.getCacheDir(), which is exactly where
+  Flutter's getTemporaryDirectory() points on Android. Both the internal
+  cache dir and its sub-directories are exposed under the authority
+  "com.example.kuri_app.fileprovider".
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Internal cache dir: /data/data/com.example.kuri_app/cache/ -->
+    <cache-path
+        name="apk_cache"
+        path="." />
+
+    <!-- External cache dir (fallback for some OEMs) -->
+    <external-cache-path
+        name="apk_external_cache"
+        path="." />
+</paths>

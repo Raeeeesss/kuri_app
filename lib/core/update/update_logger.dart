@@ -3,13 +3,21 @@ import 'package:flutter/foundation.dart';
 class UpdateLogger {
   static void logHeader(String title) {
     if (kDebugMode) {
-      debugPrint('========== $title ==========');
+      final bar = '=' * 16;
+      debugPrint('$bar $title $bar');
     }
   }
 
   static void logFooter() {
     if (kDebugMode) {
-      debugPrint('=================================');
+      debugPrint('=' * 46);
+    }
+  }
+
+  /// Prints each line without any prefix — used for the structured update block.
+  static void logRaw(String message) {
+    if (kDebugMode) {
+      debugPrint(message);
     }
   }
 

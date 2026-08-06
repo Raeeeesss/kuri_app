@@ -19,6 +19,16 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
     final updateState = ref.watch(updateProvider);
+    final packageInfoAsync = ref.watch(packageInfoProvider);
+    final installedVersionText = packageInfoAsync.when(
+      data: (info) => 'v${info.version} (Build ${info.buildNumber})',
+      loading: () => updateState.updateInfo != null
+          ? 'v${updateState.updateInfo!.currentVersion} (Build ${updateState.updateInfo!.currentBuildNumber})'
+          : 'v1.0.3 (Build 3)',
+      error: (_, _) => updateState.updateInfo != null
+          ? 'v${updateState.updateInfo!.currentVersion} (Build ${updateState.updateInfo!.currentBuildNumber})'
+          : 'v1.0.3 (Build 3)',
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -358,6 +368,28 @@ class SettingsScreen extends ConsumerWidget {
                                 }
                               },
                       ),
+                      const Divider(color: AppColors.border, height: 1, indent: 20, endIndent: 20),
+                      ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        leading: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.primarySurface,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 22),
+                        ),
+                        title: Text(
+                          loc.tr('App Information'),
+                          style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w700, fontSize: 16),
+                        ),
+                        subtitle: Text(
+                          installedVersionText,
+                          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                        ),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textMuted),
+                        onTap: () => _showAppInfoDialog(context, ref, installedVersionText),
+                      ),
                     ],
                   ),
                 ),
@@ -370,7 +402,7 @@ class SettingsScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     Text(
-                      'Kerala Kuri ${updateState.updateInfo != null ? "v${updateState.updateInfo!.currentVersion} (Build ${updateState.updateInfo!.currentBuildNumber})" : "v1.0.0 (Build 1)"}',
+                      'Kerala Kuri $installedVersionText',
                       style: AppTypography.caption.copyWith(
                         color: AppColors.textMuted,
                         fontWeight: FontWeight.w600,
@@ -393,6 +425,117 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  void _showAppInfoDialog(BuildContext context, WidgetRef ref, String versionText) {
+    final pkgAsync = ref.read(packageInfoProvider);
+    final pkg = pkgAsync.asData?.value;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: AppColors.surface,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySurface,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.info_outline_rounded,
+                      color: AppColors.primary,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'App Information',
+                          style: AppTypography.titleLarge.copyWith(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                          ),
+                        ),
+                        Text(
+                          'Kerala Kuri Mobile App',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              const Divider(color: AppColors.border, height: 1),
+              const SizedBox(height: 16),
+              _buildInfoRow('Application Name', pkg?.appName ?? 'kuri_app'),
+              const SizedBox(height: 10),
+              _buildInfoRow('Package ID', pkg?.packageName ?? 'com.example.kuri_app'),
+              const SizedBox(height: 10),
+              _buildInfoRow('Installed Version', pkg?.version ?? '1.0.3'),
+              const SizedBox(height: 10),
+              _buildInfoRow('Build Number', pkg?.buildNumber ?? '3'),
+              const SizedBox(height: 10),
+              _buildInfoRow('Update Channel', 'GitHub Releases'),
+              const SizedBox(height: 10),
+              _buildInfoRow('Repository', 'Raeeeesss/kuri_app'),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontSize: 13),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: AppTypography.caption.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

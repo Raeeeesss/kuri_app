@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'update_logger.dart';
 import 'update_model.dart';
 import 'update_service.dart';
@@ -222,4 +223,8 @@ class UpdateNotifier extends StateNotifier<UpdateState> {
 
 final updateProvider = StateNotifierProvider<UpdateNotifier, UpdateState>((ref) {
   return UpdateNotifier();
+});
+
+final packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
+  return await PackageInfo.fromPlatform();
 });
