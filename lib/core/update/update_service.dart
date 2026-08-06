@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'github_update_repository.dart';
+import 'update_logger.dart';
 import 'update_model.dart';
 
 class DownloadProgressInfo {
@@ -62,8 +63,8 @@ class UpdateService {
   final Dio _dio;
 
   UpdateService({GithubUpdateRepository? repository, Dio? dio})
-    : _repository = repository ?? GithubUpdateRepository(),
-      _dio = dio ?? Dio();
+      : _repository = repository ?? GithubUpdateRepository(),
+        _dio = dio ?? Dio();
 
   /// Gets current installed version details via package_info_plus
   Future<PackageInfo> getPackageInfo() async {
@@ -76,12 +77,16 @@ class UpdateService {
       final cleanCurrent = _cleanVersionString(currentVersionStr);
       final cleanLatest = _cleanVersionString(latestVersionStr);
 
+      UpdateLogger.info('Comparing SemVer: Current="$cleanCurrent" vs Latest="$cleanLatest"');
+
       final currentSemver = Version.parse(cleanCurrent);
       final latestSemver = Version.parse(cleanLatest);
 
-      return latestSemver > currentSemver;
-    } catch (_) {
-      // Fallback: Strip non-numeric characters and compare
+      final isNewer = latestSemver > currentSemver;
+      UpdateLogger.info('SemVer comparison result: latestSemver ($latestSemver) > currentSemver ($currentSemver) = $isNewer');
+      return isNewer;
+    } catch (e) {
+      UpdateLogger.warning('SemVer parse failed ($e). Falling back to string comparison.');
       return latestVersionStr.trim() != currentVersionStr.trim();
     }
   }
@@ -113,6 +118,12 @@ class UpdateService {
 
     final isAvailable = _isNewerVersion(currentVersionStr, latestVersionStr);
 
+    UpdateLogger.logHeader('UPDATE SERVICE CHECK RESULT');
+    UpdateLogger.info('Current Installed App Version: $currentVersionStr (Build $currentBuildStr)');
+    UpdateLogger.info('Latest GitHub Release Tag: $latestVersionStr');
+    UpdateLogger.info('Is Update Available: $isAvailable');
+    UpdateLogger.logFooter();
+
     return UpdateModel(
       currentVersion: currentVersionStr,
       currentBuildNumber: currentBuildStr,
@@ -133,10 +144,11 @@ class UpdateService {
     required void Function(DownloadProgressInfo progress) onProgress,
   }) async {
     final tempDir = await getTemporaryDirectory();
-    final fileName =
-        'kuri_app_update_${DateTime.now().millisecondsSinceEpoch}.apk';
+    final fileName = 'kuri_app_update_${DateTime.now().millisecondsSinceEpoch}.apk';
     final filePath = '${tempDir.path}/$fileName';
     final file = File(filePath);
+
+    UpdateLogger.info('Starting APK download to: $filePath');
 
     // Clean old downloaded APK files in temporary directory
     try {
@@ -191,20 +203,28 @@ class UpdateService {
       if (await file.exists()) {
         await file.delete();
       }
+      UpdateLogger.error('Downloaded APK file is invalid or corrupted (0 bytes). Deleted.');
       throw Exception('Downloaded APK is invalid or corrupted (0 bytes).');
     }
 
+    UpdateLogger.info('APK downloaded successfully. File size: ${await file.length()} bytes');
     return file;
   }
 
   /// Triggers Android package installer automatically
-  /// Triggers Android package installer automatically
   Future<void> installApk(File apkFile) async {
+    if (!await apkFile.exists() || await apkFile.length() == 0) {
+      UpdateLogger.error('APK file does not exist or is 0 bytes before installation.');
+      throw Exception('APK file does not exist or is corrupted.');
+    }
+
+    UpdateLogger.info('Opening APK package installer for: ${apkFile.path}');
     final uri = Uri.file(apkFile.path);
 
     final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
 
     if (!launched) {
+      UpdateLogger.error('Failed to open Android package installer via url_launcher.');
       throw Exception('Unable to open the downloaded APK.');
     }
   }

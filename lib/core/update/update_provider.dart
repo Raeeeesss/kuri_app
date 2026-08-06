@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'update_logger.dart';
 import 'update_model.dart';
 import 'update_service.dart';
 
@@ -76,9 +77,11 @@ class UpdateNotifier extends StateNotifier<UpdateState> {
   Future<void> checkForUpdates({bool isManual = false}) async {
     // Avoid duplicate checks if already checking or downloading
     if (state.status == UpdateStatus.checking || state.status == UpdateStatus.downloading) {
+      UpdateLogger.info('Update check skipped: already in state ${state.status}');
       return;
     }
 
+    UpdateLogger.logHeader('UPDATE NOTIFIER CHECK STARTED (isManual: $isManual)');
     state = state.copyWith(
       status: UpdateStatus.checking,
       errorMessage: null,
@@ -90,22 +93,26 @@ class UpdateNotifier extends StateNotifier<UpdateState> {
       final now = DateTime.now();
 
       if (updateInfo.isUpdateAvailable) {
+        UpdateLogger.info('State transition -> UpdateStatus.available');
         state = state.copyWith(
           status: UpdateStatus.available,
           updateInfo: updateInfo,
           lastChecked: now,
         );
       } else {
+        UpdateLogger.info('State transition -> UpdateStatus.notAvailable');
         state = state.copyWith(
           status: UpdateStatus.notAvailable,
           updateInfo: updateInfo,
           lastChecked: now,
         );
       }
-    } catch (e) {
+    } catch (e, st) {
+      final errText = e.toString().replaceAll('Exception: ', '');
+      UpdateLogger.error('State transition -> UpdateStatus.error: $errText', e, st);
       state = state.copyWith(
         status: UpdateStatus.error,
-        errorMessage: e.toString().replaceAll('Exception: ', ''),
+        errorMessage: errText,
         lastChecked: DateTime.now(),
       );
     }
@@ -115,6 +122,7 @@ class UpdateNotifier extends StateNotifier<UpdateState> {
   Future<void> startDownloadAndInstall() async {
     final info = state.updateInfo;
     if (info == null || info.apkDownloadUrl.isEmpty) {
+      UpdateLogger.error('Cannot start download: APK download URL is empty or null.');
       state = state.copyWith(
         status: UpdateStatus.error,
         errorMessage: 'Invalid update download URL.',
@@ -123,6 +131,7 @@ class UpdateNotifier extends StateNotifier<UpdateState> {
     }
 
     _cancelToken = CancelToken();
+    UpdateLogger.info('State transition -> UpdateStatus.downloading');
     state = state.copyWith(
       status: UpdateStatus.downloading,
       errorMessage: null,
@@ -137,6 +146,7 @@ class UpdateNotifier extends StateNotifier<UpdateState> {
         },
       );
 
+      UpdateLogger.info('State transition -> UpdateStatus.downloaded');
       state = state.copyWith(
         status: UpdateStatus.downloaded,
         downloadedApk: file,
@@ -144,22 +154,27 @@ class UpdateNotifier extends StateNotifier<UpdateState> {
 
       // Open Android package installer automatically
       await _service.installApk(file);
-    } on DioException catch (e) {
+    } on DioException catch (e, st) {
       if (CancelToken.isCancel(e)) {
+        UpdateLogger.info('Download cancelled by user. Reverting state to UpdateStatus.available.');
         state = state.copyWith(
           status: UpdateStatus.available,
           errorMessage: null,
         );
       } else {
+        final errText = 'Download interrupted: ${e.message ?? 'Unknown network error'}';
+        UpdateLogger.error(errText, e, st);
         state = state.copyWith(
           status: UpdateStatus.error,
-          errorMessage: 'Download interrupted: ${e.message ?? 'Unknown error'}',
+          errorMessage: errText,
         );
       }
-    } catch (e) {
+    } catch (e, st) {
+      final errText = e.toString().replaceAll('Exception: ', '');
+      UpdateLogger.error('Download or Install exception: $errText', e, st);
       state = state.copyWith(
         status: UpdateStatus.error,
-        errorMessage: e.toString().replaceAll('Exception: ', ''),
+        errorMessage: errText,
       );
     }
   }
@@ -167,6 +182,7 @@ class UpdateNotifier extends StateNotifier<UpdateState> {
   /// Cancels an in-progress APK download
   void cancelDownload() {
     if (_cancelToken != null && !_cancelToken!.isCancelled) {
+      UpdateLogger.info('Cancelling active APK download via CancelToken...');
       _cancelToken!.cancel('User cancelled download.');
     }
     state = state.copyWith(
@@ -179,11 +195,14 @@ class UpdateNotifier extends StateNotifier<UpdateState> {
   Future<void> retryInstall() async {
     if (state.downloadedApk != null) {
       try {
+        UpdateLogger.info('Retrying installation of downloaded APK...');
         await _service.installApk(state.downloadedApk!);
-      } catch (e) {
+      } catch (e, st) {
+        final errText = e.toString().replaceAll('Exception: ', '');
+        UpdateLogger.error('Retry installation failed: $errText', e, st);
         state = state.copyWith(
           status: UpdateStatus.error,
-          errorMessage: e.toString().replaceAll('Exception: ', ''),
+          errorMessage: errText,
         );
       }
     } else {
