@@ -33,7 +33,7 @@ class KuriDetailsHeaderCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  kuri.getTitle(loc.isMalayalam),
+                  kuri.getTitle(),
                   style: AppTypography.titleLarge.copyWith(
                     fontWeight: FontWeight.w800,
                     fontSize: 20,

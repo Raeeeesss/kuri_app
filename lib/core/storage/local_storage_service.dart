@@ -230,20 +230,30 @@ class LocalStorageService {
   }
 
   static const String _keySettingsLang = 'settings_language';
-  static const String _keySettingsDarkMode = 'settings_dark_mode';
   static const String _keySettingsBiometric = 'settings_biometric';
   static const String _keySettingsNotifications = 'settings_notifications';
+  static const String _keyHasPromptedPermissions = 'has_prompted_permissions';
+
+  /// Check if permissions dialog has already been shown
+  static Future<bool> hasPromptedPermissions() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_keyHasPromptedPermissions) ?? false;
+  }
+
+  /// Mark permissions dialog as shown
+  static Future<void> setPermissionsPrompted() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyHasPromptedPermissions, true);
+  }
 
   /// Save user settings preferences persistently
   static Future<void> saveSettings({
     required String language,
-    required bool isDarkMode,
     required bool isBiometricEnabled,
     required bool isNotificationsEnabled,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keySettingsLang, language);
-    await prefs.setBool(_keySettingsDarkMode, isDarkMode);
     await prefs.setBool(_keySettingsBiometric, isBiometricEnabled);
     await prefs.setBool(_keySettingsNotifications, isNotificationsEnabled);
   }
@@ -253,7 +263,6 @@ class LocalStorageService {
     final prefs = await SharedPreferences.getInstance();
     return {
       'language': prefs.getString(_keySettingsLang) ?? 'English',
-      'isDarkMode': prefs.getBool(_keySettingsDarkMode) ?? false,
       'isBiometricEnabled': prefs.getBool(_keySettingsBiometric) ?? true,
       'isNotificationsEnabled': prefs.getBool(_keySettingsNotifications) ?? true,
     };

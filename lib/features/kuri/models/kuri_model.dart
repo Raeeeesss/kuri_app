@@ -1,7 +1,6 @@
 class KuriModel {
   final String id;
   final String titleEn;
-  final String titleMl;
   final String code;
   final double monthlyAmount;
   final double totalAmount;
@@ -22,7 +21,6 @@ class KuriModel {
     required this.id,
     required String title,
     String? titleEn,
-    String? titleMl,
     required this.code,
     required this.monthlyAmount,
     required this.totalAmount,
@@ -38,12 +36,11 @@ class KuriModel {
     this.availableSeats = 5,
     this.totalSeats = 50,
     this.description = 'Government-registered Kerala Kuri scheme with high dividend returns.',
-  })  : titleEn = titleEn ?? title,
-        titleMl = titleMl ?? '';
+  })  : titleEn = titleEn ?? title;
 
   String get title => titleEn;
 
-  String getTitle(bool isMalayalam) => isMalayalam && titleMl.isNotEmpty ? titleMl : titleEn;
+  String getTitle() => titleEn;
 
   bool get isDueSoon => status == 'DUE_SOON' && !isCompleted;
   bool get isCompleted => status == 'COMPLETED' || completedInstallments >= totalInstallments;

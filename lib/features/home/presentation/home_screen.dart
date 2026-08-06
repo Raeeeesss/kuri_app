@@ -355,7 +355,7 @@ class HomeScreen extends ConsumerWidget {
                               ],
                             ),
                             Text(
-                              kuri.getTitle(loc.isMalayalam),
+                              kuri.getTitle(),
                               style: AppTypography.titleMedium.copyWith(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,

@@ -4,8 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/permission_dialog.dart';
 
-class MainWrapperScreen extends ConsumerWidget {
+import '../../core/update/update_dialog.dart';
+import '../../core/update/update_provider.dart';
+
+class MainWrapperScreen extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
 
   const MainWrapperScreen({
@@ -13,19 +17,44 @@ class MainWrapperScreen extends ConsumerWidget {
     required this.navigationShell,
   });
 
+  @override
+  ConsumerState<MainWrapperScreen> createState() => _MainWrapperScreenState();
+}
+
+class _MainWrapperScreenState extends ConsumerState<MainWrapperScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (mounted) {
+        await PermissionDialog.checkAndShow(context);
+        if (!mounted) return;
+
+        // Silent background update check
+        final updateNotifier = ref.read(updateProvider.notifier);
+        await updateNotifier.checkForUpdates(isManual: false);
+
+        final updateState = ref.read(updateProvider);
+        if (mounted && updateState.status == UpdateStatus.available && updateState.updateInfo != null) {
+          UpdateDialog.show(context);
+        }
+      }
+    });
+  }
+
   void _onTap(int index) {
-    navigationShell.goBranch(
+    widget.navigationShell.goBranch(
       index,
-      initialLocation: index == navigationShell.currentIndex,
+      initialLocation: index == widget.navigationShell.currentIndex,
     );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final loc = ref.watch(appLocalizationsProvider);
 
     return Scaffold(
-      body: navigationShell,
+      body: widget.navigationShell,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -41,7 +70,7 @@ class MainWrapperScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
             child: BottomNavigationBar(
-              currentIndex: navigationShell.currentIndex,
+              currentIndex: widget.navigationShell.currentIndex,
               onTap: _onTap,
               type: BottomNavigationBarType.fixed,
               backgroundColor: Colors.transparent,

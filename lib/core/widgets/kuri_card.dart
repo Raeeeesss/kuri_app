@@ -51,7 +51,7 @@ class KuriCard extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            kuri.getTitle(loc.isMalayalam),
+                            kuri.getTitle(),
                             style: AppTypography.titleMedium.copyWith(
                               fontWeight: FontWeight.w700,
                               fontSize: 17,

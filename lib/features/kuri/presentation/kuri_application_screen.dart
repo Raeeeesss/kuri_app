@@ -47,7 +47,7 @@ class _KuriApplicationScreenState extends ConsumerState<KuriApplicationScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '${loc.tr('Your application for')} ${activeKuri.getTitle(loc.isMalayalam)} (${loc.tr('$_selectedTickets Ticket')}) ${loc.tr('has been submitted for approval.')}',
+              '${loc.tr('Your application for')} ${activeKuri.getTitle()} (${loc.tr('$_selectedTickets Ticket')}) ${loc.tr('has been submitted for approval.')}',
               style: AppTypography.bodyMedium,
               textAlign: TextAlign.center,
             ),
@@ -73,7 +73,6 @@ class _KuriApplicationScreenState extends ConsumerState<KuriApplicationScreen> {
           id: '5',
           title: 'Kerala Diamond Savings Scheme',
           titleEn: 'Kerala Diamond Savings Scheme',
-          titleMl: 'കേരള ഡയമണ്ട് സേവിംഗ്സ് ചിട്ടി',
           code: 'KD-901',
           monthlyAmount: 20000.0,
           totalAmount: 600000.0,
@@ -139,7 +138,7 @@ class _KuriApplicationScreenState extends ConsumerState<KuriApplicationScreen> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            activeKuri.getTitle(loc.isMalayalam),
+                            activeKuri.getTitle(),
                             style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w800, fontSize: 18),
                           ),
                           const SizedBox(height: 12),

@@ -129,7 +129,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                activeKuri.getTitle(loc.isMalayalam),
+                                activeKuri.getTitle(),
                                 style: AppTypography.titleMedium.copyWith(
                                   color: AppColors.textSecondary,
                                   fontWeight: FontWeight.w600,

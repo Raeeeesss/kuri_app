@@ -9,6 +9,8 @@ import '../../../core/widgets/app_logo_widget.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../providers/auth_provider.dart';
 
+import '../../../core/services/biometric_service.dart';
+
 class QuickSecurityLockScreen extends ConsumerStatefulWidget {
   const QuickSecurityLockScreen({super.key});
 
@@ -33,14 +35,22 @@ class _QuickSecurityLockScreenState extends ConsumerState<QuickSecurityLockScree
       _errorMessage = null;
     });
 
-    await Future.delayed(const Duration(milliseconds: 1000));
+    final result = await BiometricService.authenticate(
+      reason: 'Scan your mobile Fingerprint or Face ID to unlock Kerala Kuri',
+    );
 
     if (!mounted) return;
     setState(() {
       _isAuthenticating = false;
     });
 
-    context.go('/home');
+    if (result.isSuccess) {
+      context.go('/home');
+    } else {
+      setState(() {
+        _errorMessage = result.errorMessage ?? 'Biometric authentication failed. Enter your PIN.';
+      });
+    }
   }
 
   void _verifyPinSubmit() {
